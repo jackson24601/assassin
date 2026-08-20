@@ -23,7 +23,7 @@
           </div>
         </div>
         <p class="lede">
-          Choose how many teams will play, then add multiple-choice and true/false questions for the round.
+          Choose how many teams will play, add the questions, then start the game to get a unique page for your teams.
         </p>
       </header>
 
@@ -36,6 +36,8 @@
           <ul class="checklist" id="checklist"></ul>
 
           <div class="file-actions">
+            <button class="btn primary" type="button" id="start-game" disabled>Start game</button>
+            <div id="start-error" class="errors" hidden></div>
             <button class="btn ghost" type="button" id="export-btn">Download quiz</button>
             <button class="btn ghost" type="button" id="import-btn">Upload quiz file</button>
             <input class="sr-only" id="import-input" type="file" accept="application/json,.json" />

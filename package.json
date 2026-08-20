@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Classroom review game — teacher setup for teams and questions",
+  "description": "Classroom review game — teacher setup and team join pages",
   "scripts": {
-    "start": "python3 -m http.server 4173",
-    "test": "node --test tests/questions.test.js"
+    "start": "node server.js",
+    "test": "node --test tests/*.test.js"
   }
 }

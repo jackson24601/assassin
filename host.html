@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Game lobby · Class Review</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700&family=Fraunces:opsz,wght@9..144,600;9..144,650&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body>
+    <div class="page">
+      <header class="masthead">
+        <div class="brand">
+          <div class="mark" aria-hidden="true"></div>
+          <div>
+            <p class="eyebrow">Class review</p>
+            <h1>Game lobby</h1>
+          </div>
+        </div>
+        <p class="lede">
+          Share the player page with your teams. They will open that address and join a team from their phones or laptops.
+        </p>
+      </header>
+
+      <div id="host-error" class="errors" hidden></div>
+
+      <main class="layout" id="host-app" hidden>
+        <aside class="panel setup-panel share-panel">
+          <p class="eyebrow">Player page</p>
+          <h2>Share this address</h2>
+          <p class="join-code" id="join-code"></p>
+          <p class="hint">Teams can type the code, or open the unique page below.</p>
+
+          <label class="field share-field">
+            Player page
+            <span class="share-row">
+              <input id="player-url" type="text" readonly />
+              <button class="btn primary" type="button" id="copy-link">Copy link</button>
+            </span>
+          </label>
+          <p class="hint" id="copy-status" aria-live="polite"></p>
+          <a class="btn ghost" href="/" id="back-setup">Back to setup</a>
+        </aside>
+
+        <section class="panel questions-panel">
+          <div class="questions-head">
+            <div>
+              <h2>Teams joining</h2>
+              <p class="hint" id="join-summary">Waiting for the first player.</p>
+            </div>
+          </div>
+          <div class="roster" id="roster"></div>
+        </section>
+      </main>
+    </div>
+    <script type="module" src="/js/host.js"></script>
+  </body>
+</html>

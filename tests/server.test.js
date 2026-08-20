@@ -1,0 +1,87 @@
+import assert from "node:assert/strict";
+import { test } from "node:test";
+import { createServer, listen } from "../server.js";
+
+const quiz = {
+  teamCount: 2,
+  questions: [
+    {
+      type: "true_false",
+      prompt: "Athens was a democracy.",
+      correctAnswer: true,
+    },
+  ],
+};
+
+async function withServer(run) {
+  const server = createServer();
+  const port = await listen(server, 0, "127.0.0.1");
+  try {
+    await run(`http://127.0.0.1:${port}`);
+  } finally {
+    await new Promise((resolve, reject) => {
+      server.close((error) => (error ? reject(error) : resolve()));
+    });
+  }
+}
+
+test("starting a game creates a unique player page teams can join", async () => {
+  await withServer(async (origin) => {
+    const created = await fetch(`${origin}/api/games`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(quiz),
+    });
+    assert.equal(created.status, 201);
+    const session = await created.json();
+    assert.match(session.playerPath, /^\/play\/[A-Z0-9]{6}$/);
+    assert.equal(session.playerUrl, `${origin}${session.playerPath}`);
+
+    const second = await fetch(`${origin}/api/games`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(quiz),
+    });
+    const other = await second.json();
+    assert.notEqual(other.code, session.code);
+
+    const playerPage = await fetch(`${origin}${session.playerPath}`);
+    assert.equal(playerPage.status, 200);
+    assert.match(await playerPage.text(), /Join the game/);
+
+    const publicGame = await fetch(`${origin}/api/games/${session.code}`);
+    assert.equal(publicGame.status, 200);
+    const view = await publicGame.json();
+    assert.equal("questions" in view, false);
+    assert.equal(JSON.stringify(view).includes("correctAnswer"), false);
+
+    const blockedHost = await fetch(`${origin}/api/games/${session.code}/host`);
+    assert.equal(blockedHost.status, 401);
+
+    const host = await fetch(`${origin}/api/games/${session.code}/host?k=${session.hostToken}`);
+    assert.equal(host.status, 200);
+    const lobby = await host.json();
+    assert.equal(lobby.playerUrl, session.playerUrl);
+
+    const joined = await fetch(`${origin}/api/games/${session.code}/join`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ teamId: 2, playerName: "Sam" }),
+    });
+    assert.equal(joined.status, 200);
+    const membership = await joined.json();
+    assert.equal(membership.teamId, 2);
+    assert.equal(membership.game.teams[1].members[0].name, "Sam");
+  });
+});
+
+test("an empty quiz cannot start a player page", async () => {
+  await withServer(async (origin) => {
+    const created = await fetch(`${origin}/api/games`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ teamCount: 4, questions: [] }),
+    });
+    assert.equal(created.status, 400);
+  });
+});
