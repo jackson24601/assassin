@@ -38,6 +38,20 @@
           <button class="btn primary wide" type="submit" id="join-btn">Join the game</button>
         </form>
       </section>
+
+      <section class="noir-card question-card-play" id="question-panel" hidden>
+        <p class="noir-kicker" id="question-progress">Question</p>
+        <h2 class="question-prompt" id="question-prompt"></h2>
+        <div class="answer-grid" id="answer-choices"></div>
+        <p class="answer-feedback" id="answer-feedback" hidden></p>
+        <p class="score-line" id="score-line">Score: 0</p>
+      </section>
+
+      <section class="noir-card" id="done-panel" hidden>
+        <p class="noir-kicker">Round complete</p>
+        <h2 class="question-prompt">That is every question.</h2>
+        <p class="score-line" id="final-score">Score: 0</p>
+      </section>
     </div>
 
     <script type="module" src="/js/play.js"></script>

@@ -4,8 +4,12 @@ body.noir {
   margin: 0;
   color: #f3ead2;
   background: #050505;
-  overflow: hidden;
+  overflow-x: hidden;
   font-family: "Figtree", "Segoe UI", sans-serif;
+}
+
+body.noir.is-playing .assassin-mark {
+  font-size: clamp(2.2rem, 10vw, 3.4rem);
 }
 
 .noir-scene {
@@ -146,6 +150,61 @@ body.noir .btn.primary:hover {
   width: min(430px, 100%);
 }
 
+.question-prompt {
+  margin: 0 0 14px;
+  font-family: "Special Elite", "Courier New", ui-monospace, monospace;
+  font-size: 1.22rem;
+  line-height: 1.35;
+  color: #f7f1df;
+}
+
+.answer-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.answer-btn {
+  appearance: none;
+  width: 100%;
+  border: 1px solid rgba(240, 221, 173, 0.22);
+  background: rgba(18, 18, 20, 0.92);
+  color: #f3ead2;
+  border-radius: 14px;
+  padding: 12px 14px;
+  text-align: left;
+  font-weight: 700;
+}
+
+.answer-btn:hover:not(:disabled) {
+  background: rgba(240, 221, 173, 0.16);
+}
+
+.answer-btn:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.answer-feedback {
+  margin: 12px 0 0;
+  font-family: "Special Elite", "Courier New", ui-monospace, monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.answer-feedback.good {
+  color: #9fe6a8;
+}
+
+.answer-feedback.bad {
+  color: #f0a098;
+}
+
+.score-line {
+  margin: 14px 0 0;
+  color: #d9c48a;
+  font-weight: 700;
+}
+
 @keyframes lamp-flicker {
   0%,
   92%,
@@ -182,6 +241,10 @@ body.noir .btn.primary:hover {
 @media (max-width: 640px) {
   .assassin-mark {
     font-size: clamp(3.4rem, 22vw, 5.6rem);
+  }
+
+  body.noir.is-playing .assassin-mark {
+    font-size: clamp(1.8rem, 12vw, 2.6rem);
   }
 
   .begin-msg {

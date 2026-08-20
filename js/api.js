@@ -56,8 +56,9 @@ export async function createGame(quiz) {
   );
 }
 
-export async function fetchPublicGame(code) {
-  return readJson(await fetch(`/api/games/${encodeURIComponent(code)}`));
+export async function fetchPublicGame(code, playerId) {
+  const query = playerId ? `?playerId=${encodeURIComponent(playerId)}` : "";
+  return readJson(await fetch(`/api/games/${encodeURIComponent(code)}${query}`));
 }
 
 export async function fetchHostGame(code, hostToken) {
@@ -66,9 +67,27 @@ export async function fetchHostGame(code, hostToken) {
   );
 }
 
+export async function beginHostGame(code, hostToken) {
+  return readJson(
+    await fetch(`/api/games/${encodeURIComponent(code)}/begin?k=${encodeURIComponent(hostToken)}`, {
+      method: "POST",
+    }),
+  );
+}
+
 export async function joinGame(code, body) {
   return readJson(
     await fetch(`/api/games/${encodeURIComponent(code)}/join`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    }),
+  );
+}
+
+export async function submitAnswer(code, body) {
+  return readJson(
+    await fetch(`/api/games/${encodeURIComponent(code)}/answer`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(body),
