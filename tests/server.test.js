@@ -51,6 +51,10 @@ test("starting a game creates a unique player page teams can join", async () => 
     assert.equal(playCss.status, 200);
     assert.match(await playCss.text(), /noir-alley/);
 
+    const teacherPage = await fetch(`${origin}/`);
+    assert.equal(teacherPage.status, 200);
+    assert.match(await teacherPage.text(), /Form Game/);
+
     const playerPage = await fetch(`${origin}${session.playerPath}`);
     assert.equal(playerPage.status, 200);
     const html = await playerPage.text();

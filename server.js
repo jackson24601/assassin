@@ -145,7 +145,7 @@ async function handleApi(req, res, url, store) {
       return;
     }
     if (hostTokenFrom(req, url) !== session.hostToken) {
-      sendError(res, 401, "Open this lobby from Teacher setup after starting the game.");
+      sendError(res, 401, "Open this lobby from Teacher setup after clicking Form Game.");
       return;
     }
     sendJson(res, 200, {

@@ -70,7 +70,7 @@ copyLinkBtn.addEventListener("click", async () => {
 playerUrlInput.addEventListener("click", () => playerUrlInput.select());
 
 if (!code || !hostToken) {
-  showError("Start the game from Teacher setup to get a unique player page.");
+  showError("Click Form Game on Teacher setup to get a unique player page.");
 } else {
   refresh()
     .then(() => {
