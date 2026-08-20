@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Teacher setup · Class Review</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700&family=Fraunces:opsz,wght@9..144,600;9..144,650&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <div class="page">
+      <header class="masthead">
+        <div class="brand">
+          <div class="mark" aria-hidden="true"></div>
+          <div>
+            <p class="eyebrow">Class review</p>
+            <h1>Teacher setup</h1>
+          </div>
+        </div>
+        <p class="lede">
+          Choose how many teams will play, then add multiple-choice and true/false questions for the round.
+        </p>
+      </header>
+
+      <main class="layout">
+        <aside class="panel setup-panel">
+          <h2>Teams</h2>
+          <p class="hint">Pick a number from 2 to 8. You can change this before the game starts.</p>
+          <div class="team-grid" id="team-grid"></div>
+
+          <ul class="checklist" id="checklist"></ul>
+
+          <div class="file-actions">
+            <button class="btn ghost" type="button" id="export-btn">Download quiz</button>
+            <button class="btn ghost" type="button" id="import-btn">Upload quiz file</button>
+            <input class="sr-only" id="import-input" type="file" accept="application/json,.json" />
+          </div>
+        </aside>
+
+        <section class="panel questions-panel">
+          <div class="questions-head">
+            <div>
+              <h2>Questions</h2>
+              <p class="hint">Add each item, mark the correct answer, and rearrange the order if you need to.</p>
+            </div>
+            <button class="btn primary" type="button" id="add-question">Add question</button>
+          </div>
+          <div id="question-list" class="question-list"></div>
+        </section>
+      </main>
+    </div>
+
+    <dialog id="editor" aria-labelledby="editor-title">
+      <form class="editor" id="editor-form" method="dialog">
+        <header>
+          <div>
+            <p class="eyebrow">Question editor</p>
+            <h2 id="editor-title">Add question</h2>
+          </div>
+          <button class="icon-btn" type="button" id="close-editor" aria-label="Close editor">✕</button>
+        </header>
+
+        <div class="type-toggle" role="group" aria-label="Question type">
+          <button type="button" id="type-mc" aria-pressed="true">Multiple choice</button>
+          <button type="button" id="type-tf" aria-pressed="false">True / False</button>
+        </div>
+
+        <div id="editor-errors" hidden></div>
+
+        <label class="field">
+          Question
+          <textarea id="prompt-input" name="prompt" placeholder="Type the question students will see"></textarea>
+        </label>
+
+        <div id="mc-fields">
+          <p class="hint">Type the choices, then select the radio button next to the correct one.</p>
+          <div class="choices" id="choices"></div>
+          <button class="btn ghost" type="button" id="add-choice" style="margin-top: 10px">Add another choice</button>
+        </div>
+
+        <div id="tf-fields" hidden>
+          <p class="hint">Select the correct answer.</p>
+          <div class="tf-grid">
+            <button class="tf-btn" type="button" id="tf-true" data-value="true" aria-pressed="false">True</button>
+            <button class="tf-btn" type="button" id="tf-false" data-value="false" aria-pressed="false">False</button>
+          </div>
+        </div>
+
+        <div class="editor-footer">
+          <button class="btn ghost" type="button" id="cancel-editor">Cancel</button>
+          <button class="btn primary" type="submit" id="save-question">Save question</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script type="module" src="js/teacher.js"></script>
+  </body>
+</html>
