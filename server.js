@@ -3,12 +3,14 @@ import http from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  beginGame,
   createGameSession,
   createHostToken,
   isValidJoinCode,
   joinTeam,
   normalizeJoinCode,
   publicGameView,
+  submitAnswer,
   unusedJoinCode,
 } from "./lib/session.js";
 
@@ -133,7 +135,7 @@ async function handleApi(req, res, url, store) {
       sendError(res, 404, "This game was not found. Ask your teacher for a new link.");
       return;
     }
-    sendJson(res, 200, publicGameView(session));
+    sendJson(res, 200, publicGameView(session, { playerId: url.searchParams.get("playerId") }));
     return;
   }
 
@@ -146,6 +148,30 @@ async function handleApi(req, res, url, store) {
     }
     if (hostTokenFrom(req, url) !== session.hostToken) {
       sendError(res, 401, "Open this lobby from Teacher setup after clicking Form Game.");
+      return;
+    }
+    sendJson(res, 200, {
+      ...publicGameView(session),
+      playerPath: `/play/${session.code}`,
+      playerUrl: `${requestOrigin(req)}/play/${session.code}`,
+    });
+    return;
+  }
+
+  const beginMatch = url.pathname.match(/^\/api\/games\/([^/]+)\/begin$/);
+  if (req.method === "POST" && beginMatch) {
+    const session = getSession(store, beginMatch[1]);
+    if (!session) {
+      sendError(res, 404, "This game was not found.");
+      return;
+    }
+    if (hostTokenFrom(req, url) !== session.hostToken) {
+      sendError(res, 401, "Open this lobby from Teacher setup after clicking Form Game.");
+      return;
+    }
+    const started = beginGame(session);
+    if (!started.ok) {
+      sendError(res, 400, started.errors.join(" "));
       return;
     }
     sendJson(res, 200, {
@@ -173,8 +199,25 @@ async function handleApi(req, res, url, store) {
       playerId: joined.playerId,
       teamId: joined.teamId,
       playerName: joined.playerName,
-      game: publicGameView(session),
+      game: publicGameView(session, { playerId: joined.playerId }),
     });
+    return;
+  }
+
+  const answerMatch = url.pathname.match(/^\/api\/games\/([^/]+)\/answer$/);
+  if (req.method === "POST" && answerMatch) {
+    const session = getSession(store, answerMatch[1]);
+    if (!session) {
+      sendError(res, 404, "This game was not found. Ask your teacher for a new link.");
+      return;
+    }
+    const body = await readJson(req);
+    const result = submitAnswer(session, body);
+    if (!result.ok) {
+      sendError(res, 400, result.errors.join(" "));
+      return;
+    }
+    sendJson(res, 200, result);
     return;
   }
 
