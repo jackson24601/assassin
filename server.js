@@ -19,6 +19,7 @@ const TYPES = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
   ".json": "application/json; charset=utf-8",
+  ".png": "image/png",
   ".svg": "image/svg+xml",
 };
 
@@ -70,9 +71,10 @@ function safeStaticPath(urlPath) {
   const decoded = decodeURIComponent(urlPath);
   if (decoded.includes("\0")) return null;
   const relative = decoded.replace(/^\/+/, "");
-  if (!/^(css|js)\/[A-Za-z0-9._-]+$/.test(relative)) return null;
+  if (!/^(css|js|images)\/[A-Za-z0-9._-]+$/.test(relative)) return null;
   const full = path.resolve(ROOT, relative);
-  const parent = relative.startsWith("css/") ? path.resolve(ROOT, "css") : path.resolve(ROOT, "js");
+  const folder = relative.split("/")[0];
+  const parent = path.resolve(ROOT, folder);
   if (!full.startsWith(parent + path.sep)) return null;
   return full;
 }
