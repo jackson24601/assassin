@@ -37,8 +37,9 @@ const tfFalse = document.querySelector("#tf-false");
 const editorForm = document.querySelector("#editor-form");
 const closeEditorBtn = document.querySelector("#close-editor");
 const cancelEditorBtn = document.querySelector("#cancel-editor");
-const startGameBtn = document.querySelector("#start-game");
-const startError = document.querySelector("#start-error");
+const formGameBtn = document.querySelector("#form-game");
+const formGameError = document.querySelector("#form-game-error");
+const formGameHint = document.querySelector("#form-game-hint");
 
 const LETTERS = "ABCDEF";
 
@@ -62,14 +63,17 @@ function render() {
   renderTeams();
   renderChecklist();
   renderQuestions();
-  renderStart();
+  renderFormGame();
 }
 
-function renderStart() {
+function renderFormGame() {
   if (starting) return;
   const ready = gameIsReady(game);
-  startGameBtn.disabled = !ready;
-  startGameBtn.textContent = "Start game";
+  formGameBtn.disabled = !ready;
+  formGameBtn.textContent = "Form Game";
+  formGameHint.textContent = ready
+    ? "Click Form Game to create a unique link you can share with your players."
+    : "Add at least one question, then click Form Game to create the unique player link.";
 }
 
 function renderTeams() {
@@ -287,24 +291,24 @@ editorForm.addEventListener("submit", (event) => {
 });
 closeEditorBtn.addEventListener("click", () => editor.close());
 cancelEditorBtn.addEventListener("click", () => editor.close());
-startGameBtn.addEventListener("click", async () => {
+formGameBtn.addEventListener("click", async () => {
   if (!gameIsReady(game) || starting) return;
   starting = true;
-  startError.hidden = true;
-  startError.textContent = "";
-  startGameBtn.disabled = true;
-  startGameBtn.textContent = "Starting…";
+  formGameError.hidden = true;
+  formGameError.textContent = "";
+  formGameBtn.disabled = true;
+  formGameBtn.textContent = "Forming game…";
   try {
     const created = await createGame(game);
     window.location.href = created.hostPath;
   } catch (error) {
     starting = false;
-    startError.hidden = false;
-    startError.textContent =
+    formGameError.hidden = false;
+    formGameError.textContent =
       error.message === "Failed to fetch"
-        ? "Could not start the game. Run npm start so the class can join from a shared link."
+        ? "Could not form the game. Run npm start so the class can join from a shared link."
         : error.message;
-    renderStart();
+    renderFormGame();
   }
 });
 exportBtn.addEventListener("click", () => {

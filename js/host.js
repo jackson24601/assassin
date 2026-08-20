@@ -1,4 +1,4 @@
-import { escapeHtml, fetchHostGame, gameCodeFromLocation, hostTokenFromLocation } from "./api.js";
+import { beginHostGame, escapeHtml, fetchHostGame, gameCodeFromLocation, hostTokenFromLocation } from "./api.js";
 
 const hostError = document.querySelector("#host-error");
 const hostApp = document.querySelector("#host-app");
@@ -8,10 +8,14 @@ const copyLinkBtn = document.querySelector("#copy-link");
 const copyStatus = document.querySelector("#copy-status");
 const joinSummary = document.querySelector("#join-summary");
 const roster = document.querySelector("#roster");
+const beginGameBtn = document.querySelector("#begin-game");
+const beginHint = document.querySelector("#begin-hint");
+const rosterTitle = document.querySelector("#host-app .questions-head h2");
 
 const code = gameCodeFromLocation();
 const hostToken = hostTokenFromLocation();
 let timer = null;
+let beginning = false;
 
 function showError(message) {
   hostError.hidden = false;
@@ -24,11 +28,32 @@ function render(game) {
   hostApp.hidden = false;
   joinCodeEl.textContent = game.code;
   playerUrlInput.value = game.playerUrl;
-  const joined = game.teams.reduce((sum, team) => sum + team.members.length, 0);
-  joinSummary.textContent =
-    joined === 0
-      ? "Waiting for the first player."
-      : `${joined} ${joined === 1 ? "player has" : "players have"} joined.`;
+  const joinedCount = game.teams.reduce((sum, team) => sum + team.members.length, 0);
+  const live = game.status !== "lobby";
+  const members = game.teams.flatMap((team) => team.members);
+  const allDone =
+    live &&
+    members.length > 0 &&
+    members.every((member) => (member.progress ?? 0) >= game.questionCount);
+
+  if (!live) {
+    rosterTitle.textContent = "Teams joining";
+    joinSummary.textContent =
+      joinedCount === 0
+        ? "Waiting for the first player."
+        : `${joinedCount} ${joinedCount === 1 ? "player has" : "players have"} joined.`;
+    beginGameBtn.hidden = false;
+    beginGameBtn.disabled = beginning;
+    beginGameBtn.textContent = beginning ? "Starting…" : "Begin Game";
+    beginHint.hidden = false;
+  } else {
+    rosterTitle.textContent = allDone ? "Final scores" : "Live scores";
+    joinSummary.textContent = allDone
+      ? "Every player has finished the round."
+      : "Questions are on student screens in random order.";
+    beginGameBtn.hidden = true;
+    beginHint.hidden = true;
+  }
 
   roster.innerHTML = game.teams
     .map((team) => {
@@ -36,13 +61,19 @@ function render(game) {
         team.members.length === 0
           ? `<p class="hint">Waiting for players</p>`
           : `<ul class="member-list">${team.members
-              .map((member) => `<li>${escapeHtml(member.name)}</li>`)
+              .map((member) => {
+                const extra = live ? ` · ${member.score} pts` : "";
+                return `<li>${escapeHtml(member.name)}${extra}</li>`;
+              })
               .join("")}</ul>`;
+      const pill = live
+        ? `<span class="pill ready">${team.score} pts</span>`
+        : `<span class="pill ${team.members.length ? "ready" : "wait"}">${team.members.length} joined</span>`;
       return `
         <article class="roster-card">
           <div class="roster-head">
             <h3>${escapeHtml(team.name)}</h3>
-            <span class="pill ${team.members.length ? "ready" : "wait"}">${team.members.length} joined</span>
+            ${pill}
           </div>
           ${names}
         </article>
@@ -69,8 +100,25 @@ copyLinkBtn.addEventListener("click", async () => {
 
 playerUrlInput.addEventListener("click", () => playerUrlInput.select());
 
+beginGameBtn.addEventListener("click", async () => {
+  if (beginning) return;
+  beginning = true;
+  beginGameBtn.disabled = true;
+  beginGameBtn.textContent = "Starting…";
+  try {
+    const game = await beginHostGame(code, hostToken);
+    beginning = false;
+    render(game);
+  } catch (error) {
+    beginning = false;
+    beginGameBtn.disabled = false;
+    beginGameBtn.textContent = "Begin Game";
+    copyStatus.textContent = error.message;
+  }
+});
+
 if (!code || !hostToken) {
-  showError("Start the game from Teacher setup to get a unique player page.");
+  showError("Click Form Game on Teacher setup to get a unique player page.");
 } else {
   refresh()
     .then(() => {

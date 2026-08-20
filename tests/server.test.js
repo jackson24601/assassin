@@ -51,6 +51,10 @@ test("starting a game creates a unique player page teams can join", async () => 
     assert.equal(playCss.status, 200);
     assert.match(await playCss.text(), /noir-alley/);
 
+    const teacherPage = await fetch(`${origin}/`);
+    assert.equal(teacherPage.status, 200);
+    assert.match(await teacherPage.text(), /Form Game/);
+
     const playerPage = await fetch(`${origin}${session.playerPath}`);
     assert.equal(playerPage.status, 200);
     const html = await playerPage.text();
@@ -91,5 +95,75 @@ test("an empty quiz cannot start a player page", async () => {
       body: JSON.stringify({ teamCount: 4, questions: [] }),
     });
     assert.equal(created.status, 400);
+  });
+});
+
+test("begin game serves shuffled questions and scores answers", async () => {
+  const round = {
+    teamCount: 2,
+    questions: [
+      { type: "true_false", prompt: "Athens was a democracy.", correctAnswer: true },
+      { type: "multiple_choice", prompt: "2 + 2?", choices: ["3", "4"], correctIndex: 1 },
+    ],
+  };
+
+  await withServer(async (origin) => {
+    const created = await fetch(`${origin}/api/games`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(round),
+    });
+    const session = await created.json();
+
+    const joined = await fetch(`${origin}/api/games/${session.code}/join`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ teamId: 1, playerName: "Sam" }),
+    });
+    const membership = await joined.json();
+
+    const blocked = await fetch(`${origin}/api/games/${session.code}/begin`, { method: "POST" });
+    assert.equal(blocked.status, 401);
+
+    const tooSoon = await fetch(`${origin}/api/games/${session.code}/answer`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ playerId: membership.playerId, questionId: "q_x", answer: true }),
+    });
+    assert.equal(tooSoon.status, 400);
+
+    const began = await fetch(`${origin}/api/games/${session.code}/begin?k=${session.hostToken}`, {
+      method: "POST",
+    });
+    assert.equal(began.status, 200);
+    const live = await began.json();
+    assert.equal(live.status, "playing");
+
+    const play = await fetch(
+      `${origin}/api/games/${session.code}?playerId=${encodeURIComponent(membership.playerId)}`,
+    );
+    const view = await play.json();
+    assert.equal(view.question.number, 1);
+    assert.equal("correctAnswer" in view.question, false);
+    assert.equal("correctIndex" in view.question, false);
+
+    const payload =
+      view.question.type === "true_false"
+        ? { answer: true }
+        : { choiceIndex: view.question.choices.indexOf("4") };
+    const answered = await fetch(`${origin}/api/games/${session.code}/answer`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        playerId: membership.playerId,
+        questionId: view.question.id,
+        ...payload,
+      }),
+    });
+    assert.equal(answered.status, 200);
+    const result = await answered.json();
+    assert.equal(typeof result.correct, "boolean");
+    assert.equal(result.delta === 1 || result.delta === -1, true);
+    assert.equal(result.game.question.number, 2);
   });
 });
