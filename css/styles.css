@@ -498,6 +498,148 @@ button:focus-visible {
   border: 0;
 }
 
+.btn.primary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn.primary:disabled:hover {
+  background: var(--accent);
+}
+
+.btn.wide {
+  width: 100%;
+}
+
+a.btn {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  text-decoration: none;
+}
+
+.page.narrow {
+  width: min(560px, calc(100% - 32px));
+}
+
+.masthead.stack {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.share-panel .join-code {
+  font-family: "Fraunces", Georgia, serif;
+  font-size: clamp(2.4rem, 6vw, 3.5rem);
+  letter-spacing: 0.16em;
+  line-height: 1;
+  margin: 12px 0 0;
+}
+
+.share-field {
+  margin-top: 18px;
+}
+
+.share-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.share-row input {
+  min-width: 0;
+}
+
+.share-panel .btn.ghost {
+  width: 100%;
+  margin-top: 4px;
+}
+
+.roster {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.roster-card {
+  border: 1px solid var(--card-edge);
+  border-radius: 18px;
+  padding: 16px;
+  background: #fff;
+}
+
+.roster-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.roster-head h3 {
+  font-size: 1.2rem;
+}
+
+.member-list {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.player-panel {
+  padding: 22px;
+}
+
+.field-label {
+  margin: 0 0 8px;
+  font-weight: 700;
+}
+
+.pick-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.team-pick {
+  appearance: none;
+  border: 1px solid var(--card-edge);
+  background: #fff;
+  border-radius: 16px;
+  padding: 14px 12px;
+  text-align: left;
+  display: grid;
+  gap: 4px;
+}
+
+.team-pick strong {
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 1.15rem;
+}
+
+.team-pick span {
+  color: var(--ink-soft);
+  font-size: 0.88rem;
+}
+
+.team-pick[aria-pressed="true"] {
+  background: var(--ink);
+  color: #fffaf1;
+  border-color: var(--ink);
+}
+
+.team-pick[aria-pressed="true"] span {
+  color: #eadcc3;
+}
+
+#waiting-panel h2 {
+  margin-top: 6px;
+}
+
+#waiting-panel .btn {
+  margin-top: 18px;
+}
+
 @media (max-width: 860px) {
   .layout,
   .question-card {
@@ -511,5 +653,9 @@ button:focus-visible {
   .card-actions {
     flex-direction: row;
     flex-wrap: wrap;
+  }
+
+  .share-row {
+    grid-template-columns: 1fr;
   }
 }

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Join the game · Class Review</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700&family=Fraunces:opsz,wght@9..144,600;9..144,650&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body>
+    <div class="page narrow">
+      <header class="masthead stack">
+        <div class="brand">
+          <div class="mark" aria-hidden="true"></div>
+          <div>
+            <p class="eyebrow">Class review</p>
+            <h1>Join the game</h1>
+          </div>
+        </div>
+        <p class="lede" id="player-lede">Enter your name and pick a team.</p>
+      </header>
+
+      <div id="player-error" class="errors" hidden></div>
+
+      <main class="panel player-panel" id="join-panel" hidden>
+        <form id="join-form">
+          <label class="field">
+            Your name
+            <input id="player-name" type="text" maxlength="24" autocomplete="nickname" placeholder="Taylor" required />
+          </label>
+
+          <p class="field-label">Your team</p>
+          <div class="pick-grid" id="team-picks" role="group" aria-label="Choose a team"></div>
+
+          <div id="join-errors" class="errors" hidden></div>
+          <button class="btn primary wide" type="submit" id="join-btn">Join game</button>
+        </form>
+      </main>
+
+      <main class="panel player-panel" id="waiting-panel" hidden>
+            <p class="eyebrow">You're in</p>
+        <h2 id="waiting-team">Team</h2>
+        <p class="hint" id="waiting-copy">Wait here until your teacher begins the round.</p>
+        <p class="meta" id="teammates"></p>
+        <button class="btn ghost wide" type="button" id="change-team">Change team</button>
+      </main>
+    </div>
+    <script type="module" src="/js/play.js"></script>
+  </body>
+</html>

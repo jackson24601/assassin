@@ -12,6 +12,7 @@ import {
   questionToDraft,
   summarizeQuestion,
 } from "./questions.js";
+import { createGame } from "./api.js";
 import { downloadJson, loadGame, saveGame } from "./storage.js";
 
 const teamGrid = document.querySelector("#team-grid");
@@ -36,12 +37,15 @@ const tfFalse = document.querySelector("#tf-false");
 const editorForm = document.querySelector("#editor-form");
 const closeEditorBtn = document.querySelector("#close-editor");
 const cancelEditorBtn = document.querySelector("#cancel-editor");
+const startGameBtn = document.querySelector("#start-game");
+const startError = document.querySelector("#start-error");
 
 const LETTERS = "ABCDEF";
 
 let game = restoreGame();
 let draft = emptyMultipleChoiceDraft();
 let editingId = null;
+let starting = false;
 
 function restoreGame() {
   const stored = loadGame(createDefaultGame);
@@ -58,6 +62,14 @@ function render() {
   renderTeams();
   renderChecklist();
   renderQuestions();
+  renderStart();
+}
+
+function renderStart() {
+  if (starting) return;
+  const ready = gameIsReady(game);
+  startGameBtn.disabled = !ready;
+  startGameBtn.textContent = "Start game";
 }
 
 function renderTeams() {
@@ -275,6 +287,26 @@ editorForm.addEventListener("submit", (event) => {
 });
 closeEditorBtn.addEventListener("click", () => editor.close());
 cancelEditorBtn.addEventListener("click", () => editor.close());
+startGameBtn.addEventListener("click", async () => {
+  if (!gameIsReady(game) || starting) return;
+  starting = true;
+  startError.hidden = true;
+  startError.textContent = "";
+  startGameBtn.disabled = true;
+  startGameBtn.textContent = "Starting…";
+  try {
+    const created = await createGame(game);
+    window.location.href = created.hostPath;
+  } catch (error) {
+    starting = false;
+    startError.hidden = false;
+    startError.textContent =
+      error.message === "Failed to fetch"
+        ? "Could not start the game. Run npm start so the class can join from a shared link."
+        : error.message;
+    renderStart();
+  }
+});
 exportBtn.addEventListener("click", () => {
   downloadJson("class-review-quiz.json", game);
 });
