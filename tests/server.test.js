@@ -45,9 +45,17 @@ test("starting a game creates a unique player page teams can join", async () => 
     const other = await second.json();
     assert.notEqual(other.code, session.code);
 
+    const art = await fetch(`${origin}/images/noir-alley.png`);
+    assert.equal(art.status, 200);
+    const playCss = await fetch(`${origin}/css/play.css`);
+    assert.equal(playCss.status, 200);
+    assert.match(await playCss.text(), /noir-alley/);
+
     const playerPage = await fetch(`${origin}${session.playerPath}`);
     assert.equal(playerPage.status, 200);
-    assert.match(await playerPage.text(), /Join the game/);
+    const html = await playerPage.text();
+    assert.match(html, /Assassin/);
+    assert.match(html, /Game About To Begin/);
 
     const publicGame = await fetch(`${origin}/api/games/${session.code}`);
     assert.equal(publicGame.status, 200);

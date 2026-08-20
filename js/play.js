@@ -8,29 +8,24 @@ import {
 } from "./api.js";
 
 const playerError = document.querySelector("#player-error");
-const playerLede = document.querySelector("#player-lede");
 const joinPanel = document.querySelector("#join-panel");
-const waitingPanel = document.querySelector("#waiting-panel");
+const beginMsg = document.querySelector("#begin-msg");
 const joinForm = document.querySelector("#join-form");
 const playerNameInput = document.querySelector("#player-name");
 const teamPicks = document.querySelector("#team-picks");
 const joinErrors = document.querySelector("#join-errors");
-const waitingTeam = document.querySelector("#waiting-team");
-const teammates = document.querySelector("#teammates");
-const changeTeamBtn = document.querySelector("#change-team");
 
 const code = gameCodeFromLocation();
 let game = null;
 let selectedTeamId = null;
 let joined = loadPlayerJoin(code);
-let pickingTeam = false;
 let timer = null;
 
 function showFatal(message) {
   playerError.hidden = false;
   playerError.textContent = message;
   joinPanel.hidden = true;
-  waitingPanel.hidden = true;
+  beginMsg.hidden = true;
 }
 
 function hideJoinError() {
@@ -72,21 +67,14 @@ function renderTeamPicks() {
   });
 }
 
-function renderWaiting(team) {
+function renderWaiting() {
   joinPanel.hidden = true;
-  waitingPanel.hidden = false;
-  playerLede.textContent = "Stay on this page. Your teacher will start the round from the lobby.";
-  waitingTeam.textContent = team.name;
-  const others = team.members.filter((member) => member.id !== joined.playerId).map((member) => member.name);
-  teammates.textContent = others.length
-    ? `With you: ${others.join(", ")}`
-    : "You're the first one on this team.";
+  beginMsg.hidden = false;
 }
 
 function renderJoin() {
-  waitingPanel.hidden = true;
+  beginMsg.hidden = true;
   joinPanel.hidden = false;
-  playerLede.textContent = `Game ${game.code}. Enter your name and pick a team.`;
   if (joined?.playerName) playerNameInput.value = joined.playerName;
   if (joined?.teamId) selectedTeamId = joined.teamId;
   if (selectedTeamId == null) selectedTeamId = game.teams[0]?.id ?? null;
@@ -95,8 +83,7 @@ function renderJoin() {
 
 function render() {
   playerError.hidden = true;
-  const team = currentMembership();
-  if (team && !pickingTeam) renderWaiting(team);
+  if (currentMembership()) renderWaiting();
   else renderJoin();
 }
 
@@ -128,17 +115,10 @@ joinForm.addEventListener("submit", async (event) => {
     };
     savePlayerJoin(code, joined);
     game = result.game;
-    pickingTeam = false;
     render();
   } catch (error) {
     showJoinError(error.message);
   }
-});
-
-changeTeamBtn.addEventListener("click", () => {
-  pickingTeam = true;
-  selectedTeamId = joined?.teamId ?? selectedTeamId;
-  renderJoin();
 });
 
 if (!code) {
