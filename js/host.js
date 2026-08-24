@@ -146,7 +146,7 @@ startGameBtn.addEventListener("click", async () => {
 });
 
 if (!code || !hostToken) {
-  showError("Click Form Game on Teacher setup to get a unique player page.");
+  showError("Click Create Game on Teacher setup to get a unique player page.");
 } else {
   refresh()
     .then(() => {
