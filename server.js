@@ -3,12 +3,14 @@ import http from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  beginGame,
   createGameSession,
   createHostToken,
   isValidJoinCode,
   joinTeam,
   normalizeJoinCode,
   publicGameView,
+  submitAnswer,
   unusedJoinCode,
 } from "./lib/session.js";
 
@@ -19,11 +21,49 @@ const TYPES = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
   ".json": "application/json; charset=utf-8",
+  ".png": "image/png",
   ".svg": "image/svg+xml",
 };
 
-export function createGameStore() {
-  return new Map();
+export function createGameStore(filePath) {
+  const map = new Map();
+
+  const persist = () => {
+    if (!filePath) return;
+    try {
+      fs.mkdirSync(path.dirname(filePath), { recursive: true });
+      fs.writeFileSync(filePath, JSON.stringify(Object.fromEntries(map)));
+    } catch {
+      // Keep the in-memory game running if the disk write fails.
+    }
+  };
+
+  if (filePath && fs.existsSync(filePath)) {
+    try {
+      const saved = JSON.parse(fs.readFileSync(filePath, "utf8"));
+      Object.entries(saved).forEach(([code, session]) => map.set(code, session));
+    } catch {
+      // Start with an empty store if the file is unreadable.
+    }
+  }
+
+  return {
+    get: (key) => map.get(key),
+    has: (key) => map.has(key),
+    set: (key, value) => {
+      map.set(key, value);
+      persist();
+    },
+    persist,
+  };
+}
+
+function persistStore(store) {
+  try {
+    if (typeof store.persist === "function") store.persist();
+  } catch {
+    // Starting the round should not fail just because the save file is unwritable.
+  }
 }
 
 function sendJson(res, status, body) {
@@ -50,9 +90,10 @@ async function readJson(req, limit = 1_000_000) {
     }
     chunks.push(chunk);
   }
-  if (size === 0) return {};
+  const text = Buffer.concat(chunks).toString("utf8").trim();
+  if (!text) return {};
   try {
-    return JSON.parse(Buffer.concat(chunks).toString("utf8"));
+    return JSON.parse(text);
   } catch {
     const error = new Error("Request was not valid JSON.");
     error.statusCode = 400;
@@ -70,9 +111,10 @@ function safeStaticPath(urlPath) {
   const decoded = decodeURIComponent(urlPath);
   if (decoded.includes("\0")) return null;
   const relative = decoded.replace(/^\/+/, "");
-  if (!/^(css|js)\/[A-Za-z0-9._-]+$/.test(relative)) return null;
+  if (!/^(css|js|images)\/[A-Za-z0-9._-]+$/.test(relative)) return null;
   const full = path.resolve(ROOT, relative);
-  const parent = relative.startsWith("css/") ? path.resolve(ROOT, "css") : path.resolve(ROOT, "js");
+  const folder = relative.split("/")[0];
+  const parent = path.resolve(ROOT, folder);
   if (!full.startsWith(parent + path.sep)) return null;
   return full;
 }
@@ -112,6 +154,7 @@ async function handleApi(req, res, url, store) {
       return;
     }
     store.set(code, created.session);
+    persistStore(store);
     const origin = requestOrigin(req);
     sendJson(res, 201, {
       code,
@@ -131,7 +174,7 @@ async function handleApi(req, res, url, store) {
       sendError(res, 404, "This game was not found. Ask your teacher for a new link.");
       return;
     }
-    sendJson(res, 200, publicGameView(session));
+    sendJson(res, 200, publicGameView(session, { playerId: url.searchParams.get("playerId") }));
     return;
   }
 
@@ -143,9 +186,37 @@ async function handleApi(req, res, url, store) {
       return;
     }
     if (hostTokenFrom(req, url) !== session.hostToken) {
-      sendError(res, 401, "Open this lobby from Teacher setup after starting the game.");
+      sendError(res, 401, "Open this lobby from Teacher setup after clicking Create Game.");
       return;
     }
+    sendJson(res, 200, {
+      ...publicGameView(session),
+      playerPath: `/play/${session.code}`,
+      playerUrl: `${requestOrigin(req)}/play/${session.code}`,
+    });
+    return;
+  }
+
+  const beginMatch = url.pathname.match(/^\/api\/games\/([^/]+)\/begin$/);
+  // Start Game has no payload. Waiting to parse a body can hang on empty POSTs
+  // (some browsers keep the connection open), so GET is also accepted.
+  if ((req.method === "POST" || req.method === "GET") && beginMatch) {
+    if (req.method === "POST") req.resume();
+    const session = getSession(store, beginMatch[1]);
+    if (!session) {
+      sendError(res, 404, "This game was not found.");
+      return;
+    }
+    if (hostTokenFrom(req, url) !== session.hostToken) {
+      sendError(res, 401, "Open this lobby from Teacher setup after clicking Create Game.");
+      return;
+    }
+    const started = beginGame(session);
+    if (!started.ok) {
+      sendError(res, 400, started.errors.join(" "));
+      return;
+    }
+    persistStore(store);
     sendJson(res, 200, {
       ...publicGameView(session),
       playerPath: `/play/${session.code}`,
@@ -167,12 +238,31 @@ async function handleApi(req, res, url, store) {
       sendError(res, 400, joined.errors.join(" "));
       return;
     }
+    persistStore(store);
     sendJson(res, 200, {
       playerId: joined.playerId,
       teamId: joined.teamId,
       playerName: joined.playerName,
-      game: publicGameView(session),
+      game: publicGameView(session, { playerId: joined.playerId }),
     });
+    return;
+  }
+
+  const answerMatch = url.pathname.match(/^\/api\/games\/([^/]+)\/answer$/);
+  if (req.method === "POST" && answerMatch) {
+    const session = getSession(store, answerMatch[1]);
+    if (!session) {
+      sendError(res, 404, "This game was not found. Ask your teacher for a new link.");
+      return;
+    }
+    const body = await readJson(req);
+    const result = submitAnswer(session, body);
+    if (!result.ok) {
+      sendError(res, 400, result.errors.join(" "));
+      return;
+    }
+    persistStore(store);
+    sendJson(res, 200, result);
     return;
   }
 
@@ -190,8 +280,7 @@ export function createServer({ store = createGameStore() } = {}) {
       }
 
       if (req.method !== "GET") {
-        res.writeHead(405, { allow: "GET", connection: "close" });
-        res.end("Method not allowed");
+        sendError(res, 405, "This page only accepts GET. Game actions go through the /api/games route.");
         return;
       }
 
@@ -236,7 +325,8 @@ export function listen(server, port = PORT, host = "0.0.0.0") {
 
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 if (isMain) {
-  const server = createServer();
+  const store = createGameStore(path.join(ROOT, "data", "games.json"));
+  const server = createServer({ store });
   listen(server).then((port) => {
     console.log(`Class Review is running at http://localhost:${port}`);
   });

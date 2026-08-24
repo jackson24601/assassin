@@ -23,7 +23,7 @@
           </div>
         </div>
         <p class="lede">
-          Choose how many teams will play, add the questions, then start the game to get a unique page for your teams.
+          Choose how many teams will play and add the questions. Click Create Game to generate a player URL you can share. After everyone has joined, click Start Game in the lobby to send the questions.
         </p>
       </header>
 
@@ -36,8 +36,6 @@
           <ul class="checklist" id="checklist"></ul>
 
           <div class="file-actions">
-            <button class="btn primary" type="button" id="start-game" disabled>Start game</button>
-            <div id="start-error" class="errors" hidden></div>
             <button class="btn ghost" type="button" id="export-btn">Download quiz</button>
             <button class="btn ghost" type="button" id="import-btn">Upload quiz file</button>
             <input class="sr-only" id="import-input" type="file" accept="application/json,.json" />
@@ -53,6 +51,14 @@
             <button class="btn primary" type="button" id="add-question">Add question</button>
           </div>
           <div id="question-list" class="question-list"></div>
+          <div class="create-game-bar">
+            <div>
+              <h3>Create the player link</h3>
+              <p class="hint" id="create-game-hint">Add at least one question, then click Create Game to generate a URL you can send to your teams.</p>
+            </div>
+            <button class="btn primary" type="button" id="create-game" disabled>Create Game</button>
+          </div>
+          <div id="create-game-error" class="errors" hidden></div>
         </section>
       </main>
     </div>
