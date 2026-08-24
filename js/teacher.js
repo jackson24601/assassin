@@ -37,16 +37,16 @@ const tfFalse = document.querySelector("#tf-false");
 const editorForm = document.querySelector("#editor-form");
 const closeEditorBtn = document.querySelector("#close-editor");
 const cancelEditorBtn = document.querySelector("#cancel-editor");
-const formGameBtn = document.querySelector("#form-game");
-const formGameError = document.querySelector("#form-game-error");
-const formGameHint = document.querySelector("#form-game-hint");
+const createGameBtn = document.querySelector("#create-game");
+const createGameError = document.querySelector("#create-game-error");
+const createGameHint = document.querySelector("#create-game-hint");
 
 const LETTERS = "ABCDEF";
 
 let game = restoreGame();
 let draft = emptyMultipleChoiceDraft();
 let editingId = null;
-let starting = false;
+let creating = false;
 
 function restoreGame() {
   const stored = loadGame(createDefaultGame);
@@ -63,17 +63,17 @@ function render() {
   renderTeams();
   renderChecklist();
   renderQuestions();
-  renderFormGame();
+  renderCreateGame();
 }
 
-function renderFormGame() {
-  if (starting) return;
+function renderCreateGame() {
+  if (creating) return;
   const ready = gameIsReady(game);
-  formGameBtn.disabled = !ready;
-  formGameBtn.textContent = "Form Game";
-  formGameHint.textContent = ready
-    ? "Click Form Game to create a unique link you can share with your players."
-    : "Add at least one question, then click Form Game to create the unique player link.";
+  createGameBtn.disabled = !ready;
+  createGameBtn.textContent = "Create Game";
+  createGameHint.textContent = ready
+    ? "Click Create Game to generate a player URL. After your teams join, click Start Game in the lobby."
+    : "Add at least one question, then click Create Game to generate a URL you can send to your teams.";
 }
 
 function renderTeams() {
@@ -291,24 +291,24 @@ editorForm.addEventListener("submit", (event) => {
 });
 closeEditorBtn.addEventListener("click", () => editor.close());
 cancelEditorBtn.addEventListener("click", () => editor.close());
-formGameBtn.addEventListener("click", async () => {
-  if (!gameIsReady(game) || starting) return;
-  starting = true;
-  formGameError.hidden = true;
-  formGameError.textContent = "";
-  formGameBtn.disabled = true;
-  formGameBtn.textContent = "Forming game…";
+createGameBtn.addEventListener("click", async () => {
+  if (!gameIsReady(game) || creating) return;
+  creating = true;
+  createGameError.hidden = true;
+  createGameError.textContent = "";
+  createGameBtn.disabled = true;
+  createGameBtn.textContent = "Creating game…";
   try {
     const created = await createGame(game);
     window.location.href = created.hostPath;
   } catch (error) {
-    starting = false;
-    formGameError.hidden = false;
-    formGameError.textContent =
+    creating = false;
+    createGameError.hidden = false;
+    createGameError.textContent =
       error.message === "Failed to fetch"
-        ? "Could not form the game. Run npm start so the class can join from a shared link."
+        ? "Could not create the game. Run npm start so the class can join from a shared link."
         : error.message;
-    renderFormGame();
+    renderCreateGame();
   }
 });
 exportBtn.addEventListener("click", () => {

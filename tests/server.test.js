@@ -56,7 +56,7 @@ test("starting a game creates a unique player page teams can join", async () => 
 
     const teacherPage = await fetch(`${origin}/`);
     assert.equal(teacherPage.status, 200);
-    assert.match(await teacherPage.text(), /Form Game/);
+    assert.match(await teacherPage.text(), /Create Game/);
 
     const hostPage = await fetch(`${origin}/host/${session.code}?k=${session.hostToken}`);
     assert.equal(hostPage.status, 200);
@@ -184,7 +184,7 @@ test("begin game serves shuffled questions and scores answers", async () => {
 
 test("Start Game works with a JSON body, whitespace, or GET", async () => {
   await withServer(async (origin) => {
-    async function formGame() {
+    async function createLiveGame() {
       const created = await fetch(`${origin}/api/games`, {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -193,7 +193,7 @@ test("Start Game works with a JSON body, whitespace, or GET", async () => {
       return created.json();
     }
 
-    const jsonBody = await formGame();
+    const jsonBody = await createLiveGame();
     const withJson = await fetch(`${origin}/api/games/${jsonBody.code}/begin?k=${jsonBody.hostToken}`, {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -202,7 +202,7 @@ test("Start Game works with a JSON body, whitespace, or GET", async () => {
     assert.equal(withJson.status, 200);
     assert.equal((await withJson.json()).status, "playing");
 
-    const whitespace = await formGame();
+    const whitespace = await createLiveGame();
     const withSpace = await fetch(
       `${origin}/api/games/${whitespace.code}/begin?k=${whitespace.hostToken}`,
       {
@@ -214,7 +214,7 @@ test("Start Game works with a JSON body, whitespace, or GET", async () => {
     assert.equal(withSpace.status, 200);
     assert.equal((await withSpace.json()).status, "playing");
 
-    const viaGet = await formGame();
+    const viaGet = await createLiveGame();
     const getBegan = await fetch(`${origin}/api/games/${viaGet.code}/begin?k=${viaGet.hostToken}`);
     assert.equal(getBegan.status, 200);
     assert.equal((await getBegan.json()).status, "playing");

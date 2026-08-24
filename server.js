@@ -186,7 +186,7 @@ async function handleApi(req, res, url, store) {
       return;
     }
     if (hostTokenFrom(req, url) !== session.hostToken) {
-      sendError(res, 401, "Open this lobby from Teacher setup after clicking Form Game.");
+      sendError(res, 401, "Open this lobby from Teacher setup after clicking Create Game.");
       return;
     }
     sendJson(res, 200, {
@@ -208,7 +208,7 @@ async function handleApi(req, res, url, store) {
       return;
     }
     if (hostTokenFrom(req, url) !== session.hostToken) {
-      sendError(res, 401, "Open this lobby from Teacher setup after clicking Form Game.");
+      sendError(res, 401, "Open this lobby from Teacher setup after clicking Create Game.");
       return;
     }
     const started = beginGame(session);
@@ -280,7 +280,7 @@ export function createServer({ store = createGameStore() } = {}) {
       }
 
       if (req.method !== "GET") {
-        sendError(res, 405, "This page only accepts GET. Start Game goes through the /api/games route.");
+        sendError(res, 405, "This page only accepts GET. Game actions go through the /api/games route.");
         return;
       }
 
