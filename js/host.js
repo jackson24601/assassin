@@ -8,19 +8,33 @@ const copyLinkBtn = document.querySelector("#copy-link");
 const copyStatus = document.querySelector("#copy-status");
 const joinSummary = document.querySelector("#join-summary");
 const roster = document.querySelector("#roster");
-const beginGameBtn = document.querySelector("#begin-game");
-const beginHint = document.querySelector("#begin-hint");
+const startGameBtn = document.querySelector("#start-game");
+const startHint = document.querySelector("#start-hint");
+const startError = document.querySelector("#start-error");
 const rosterTitle = document.querySelector("#host-app .questions-head h2");
 
 const code = gameCodeFromLocation();
 const hostToken = hostTokenFromLocation();
 let timer = null;
-let beginning = false;
+let starting = false;
+let applyId = 0;
+let liveStarted = false;
 
 function showError(message) {
   hostError.hidden = false;
   hostError.textContent = message;
   hostApp.hidden = true;
+}
+
+function showStartError(message) {
+  startError.hidden = !message;
+  startError.textContent = message || "";
+}
+
+function applyGame(game) {
+  if (liveStarted && game.status === "lobby") return;
+  if (game.status === "playing") liveStarted = true;
+  render(game);
 }
 
 function render(game) {
@@ -42,17 +56,18 @@ function render(game) {
       joinedCount === 0
         ? "Waiting for the first player."
         : `${joinedCount} ${joinedCount === 1 ? "player has" : "players have"} joined.`;
-    beginGameBtn.hidden = false;
-    beginGameBtn.disabled = beginning;
-    beginGameBtn.textContent = beginning ? "Starting…" : "Begin Game";
-    beginHint.hidden = false;
+    startGameBtn.hidden = false;
+    startGameBtn.disabled = starting;
+    startGameBtn.textContent = starting ? "Starting…" : "Start Game";
+    startHint.hidden = false;
   } else {
     rosterTitle.textContent = allDone ? "Final scores" : "Live scores";
     joinSummary.textContent = allDone
       ? "Every player has finished the round."
       : "Questions are on student screens in random order.";
-    beginGameBtn.hidden = true;
-    beginHint.hidden = true;
+    startGameBtn.hidden = true;
+    startHint.hidden = true;
+    showStartError("");
   }
 
   roster.innerHTML = game.teams
@@ -83,8 +98,10 @@ function render(game) {
 }
 
 async function refresh() {
+  const id = ++applyId;
   const game = await fetchHostGame(code, hostToken);
-  render(game);
+  if (id !== applyId) return;
+  applyGame(game);
 }
 
 copyLinkBtn.addEventListener("click", async () => {
@@ -100,20 +117,23 @@ copyLinkBtn.addEventListener("click", async () => {
 
 playerUrlInput.addEventListener("click", () => playerUrlInput.select());
 
-beginGameBtn.addEventListener("click", async () => {
-  if (beginning) return;
-  beginning = true;
-  beginGameBtn.disabled = true;
-  beginGameBtn.textContent = "Starting…";
+startGameBtn.addEventListener("click", async () => {
+  if (starting) return;
+  starting = true;
+  startGameBtn.disabled = true;
+  startGameBtn.textContent = "Starting…";
+  showStartError("");
+  const id = ++applyId;
   try {
     const game = await beginHostGame(code, hostToken);
-    beginning = false;
-    render(game);
+    starting = false;
+    if (id !== applyId) return;
+    applyGame(game);
   } catch (error) {
-    beginning = false;
-    beginGameBtn.disabled = false;
-    beginGameBtn.textContent = "Begin Game";
-    copyStatus.textContent = error.message;
+    starting = false;
+    startGameBtn.disabled = false;
+    startGameBtn.textContent = "Start Game";
+    showStartError(error.message);
   }
 });
 

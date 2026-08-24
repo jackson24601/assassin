@@ -25,8 +25,37 @@ const TYPES = {
   ".svg": "image/svg+xml",
 };
 
-export function createGameStore() {
-  return new Map();
+export function createGameStore(filePath) {
+  const map = new Map();
+
+  const persist = () => {
+    if (!filePath) return;
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    fs.writeFileSync(filePath, JSON.stringify(Object.fromEntries(map)));
+  };
+
+  if (filePath && fs.existsSync(filePath)) {
+    try {
+      const saved = JSON.parse(fs.readFileSync(filePath, "utf8"));
+      Object.entries(saved).forEach(([code, session]) => map.set(code, session));
+    } catch {
+      // Start with an empty store if the file is unreadable.
+    }
+  }
+
+  return {
+    get: (key) => map.get(key),
+    has: (key) => map.has(key),
+    set: (key, value) => {
+      map.set(key, value);
+      persist();
+    },
+    persist,
+  };
+}
+
+function persistStore(store) {
+  if (typeof store.persist === "function") store.persist();
 }
 
 function sendJson(res, status, body) {
@@ -116,6 +145,7 @@ async function handleApi(req, res, url, store) {
       return;
     }
     store.set(code, created.session);
+    persistStore(store);
     const origin = requestOrigin(req);
     sendJson(res, 201, {
       code,
@@ -160,6 +190,7 @@ async function handleApi(req, res, url, store) {
 
   const beginMatch = url.pathname.match(/^\/api\/games\/([^/]+)\/begin$/);
   if (req.method === "POST" && beginMatch) {
+    await readJson(req);
     const session = getSession(store, beginMatch[1]);
     if (!session) {
       sendError(res, 404, "This game was not found.");
@@ -174,6 +205,7 @@ async function handleApi(req, res, url, store) {
       sendError(res, 400, started.errors.join(" "));
       return;
     }
+    persistStore(store);
     sendJson(res, 200, {
       ...publicGameView(session),
       playerPath: `/play/${session.code}`,
@@ -195,6 +227,7 @@ async function handleApi(req, res, url, store) {
       sendError(res, 400, joined.errors.join(" "));
       return;
     }
+    persistStore(store);
     sendJson(res, 200, {
       playerId: joined.playerId,
       teamId: joined.teamId,
@@ -217,6 +250,7 @@ async function handleApi(req, res, url, store) {
       sendError(res, 400, result.errors.join(" "));
       return;
     }
+    persistStore(store);
     sendJson(res, 200, result);
     return;
   }
@@ -281,7 +315,8 @@ export function listen(server, port = PORT, host = "0.0.0.0") {
 
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 if (isMain) {
-  const server = createServer();
+  const store = createGameStore(path.join(ROOT, "data", "games.json"));
+  const server = createServer({ store });
   listen(server).then((port) => {
     console.log(`Class Review is running at http://localhost:${port}`);
   });

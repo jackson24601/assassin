@@ -150,5 +150,10 @@ test("begin game shuffles questions and scores +1 / -1", () => {
   assert.equal(view.question, null);
   assert.equal(JSON.stringify(view).includes("correctIndex"), false);
   assert.equal(JSON.stringify(view).includes("correctAnswer"), false);
+
+  const order = [...created.session.questionOrder];
+  const again = beginGame(created.session);
+  assert.equal(again.ok, true);
+  assert.deepEqual(created.session.questionOrder, order);
 });
 

@@ -7,7 +7,7 @@ A web-based classroom review game. Teachers build the quiz, then share a unique 
 - Select **2–8 teams**
 - Add **multiple-choice** and **true/false** questions, marking the correct answer
 - Click **Form Game** to create a **unique player page**
-- Click **Begin Game** when the class is ready; questions appear one at a time in random order
+- Click **Start Game** when the class is ready; questions appear one at a time in random order
 - Right answers score **+1**, wrong answers score **-1**
 - Share that page address with the class; each team opens it and joins
 - See who has joined from the teacher lobby

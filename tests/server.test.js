@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { test } from "node:test";
-import { createServer, listen } from "../server.js";
+import { createGameStore, createServer, listen } from "../server.js";
 
 const quiz = {
   teamCount: 2,
@@ -13,8 +16,8 @@ const quiz = {
   ],
 };
 
-async function withServer(run) {
-  const server = createServer();
+async function withServer(run, options = {}) {
+  const server = createServer(options);
   const port = await listen(server, 0, "127.0.0.1");
   try {
     await run(`http://127.0.0.1:${port}`);
@@ -54,6 +57,10 @@ test("starting a game creates a unique player page teams can join", async () => 
     const teacherPage = await fetch(`${origin}/`);
     assert.equal(teacherPage.status, 200);
     assert.match(await teacherPage.text(), /Form Game/);
+
+    const hostPage = await fetch(`${origin}/host/${session.code}?k=${session.hostToken}`);
+    assert.equal(hostPage.status, 200);
+    assert.match(await hostPage.text(), /Start Game/);
 
     const playerPage = await fetch(`${origin}${session.playerPath}`);
     assert.equal(playerPage.status, 200);
@@ -165,5 +172,45 @@ test("begin game serves shuffled questions and scores answers", async () => {
     assert.equal(typeof result.correct, "boolean");
     assert.equal(result.delta === 1 || result.delta === -1, true);
     assert.equal(result.game.question.number, 2);
+
+    const startedAgain = await fetch(`${origin}/api/games/${session.code}/begin?k=${session.hostToken}`, {
+      method: "POST",
+    });
+    assert.equal(startedAgain.status, 200);
+    const again = await startedAgain.json();
+    assert.equal(again.status, "playing");
   });
+});
+
+test("a started game is still running after the server restarts", async () => {
+  const file = path.join(os.tmpdir(), `assassin-games-${Date.now()}.json`);
+  let code = "";
+  let hostToken = "";
+  try {
+    const firstStore = createGameStore(file);
+    await withServer(async (origin) => {
+      const created = await fetch(`${origin}/api/games`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(quiz),
+      });
+      const session = await created.json();
+      const began = await fetch(`${origin}/api/games/${session.code}/begin?k=${session.hostToken}`, {
+        method: "POST",
+      });
+      assert.equal(began.status, 200);
+      code = session.code;
+      hostToken = session.hostToken;
+    }, { store: firstStore });
+
+    const secondStore = createGameStore(file);
+    await withServer(async (origin) => {
+      const host = await fetch(`${origin}/api/games/${code}/host?k=${hostToken}`);
+      assert.equal(host.status, 200);
+      const lobby = await host.json();
+      assert.equal(lobby.status, "playing");
+    }, { store: secondStore });
+  } finally {
+    fs.rmSync(file, { force: true });
+  }
 });

@@ -31,6 +31,8 @@ let joined = loadPlayerJoin(code);
 let timer = null;
 let displayedQuestionId = null;
 let answering = false;
+let applyId = 0;
+let liveStarted = false;
 
 function hidePlaySurfaces() {
   joinPanel.hidden = true;
@@ -158,6 +160,16 @@ function renderDone() {
   setScoreText(game.you?.score ?? 0, game.you?.teamScore);
 }
 
+function applyGame(next) {
+  if (liveStarted && next.status === "lobby") return;
+  if (next.status && next.status !== "lobby") liveStarted = true;
+  game = next;
+  if (joined?.playerId && !currentMembership()) {
+    joined = null;
+  }
+  render();
+}
+
 function render() {
   playerError.hidden = true;
   if (!currentMembership()) {
@@ -178,11 +190,10 @@ function render() {
 }
 
 async function refresh() {
-  game = await fetchPublicGame(code, joined?.playerId);
-  if (joined?.playerId && !currentMembership()) {
-    joined = null;
-  }
-  render();
+  const id = ++applyId;
+  const next = await fetchPublicGame(code, joined?.playerId);
+  if (id !== applyId) return;
+  applyGame(next);
 }
 
 async function sendAnswer(payload) {
@@ -199,6 +210,7 @@ async function sendAnswer(payload) {
     answerFeedback.className = `answer-feedback ${result.correct ? "good" : "bad"}`;
     answerFeedback.textContent = result.correct ? "Correct. +1" : "Wrong. -1";
     game = result.game;
+    liveStarted = true;
     setScoreText(result.score, game.you?.teamScore);
     window.setTimeout(() => {
       displayedQuestionId = null;
@@ -233,8 +245,7 @@ joinForm.addEventListener("submit", async (event) => {
       playerName: result.playerName,
     };
     savePlayerJoin(code, joined);
-    game = result.game;
-    render();
+    applyGame(result.game);
   } catch (error) {
     showJoinError(error.message);
   }
