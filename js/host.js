@@ -31,6 +31,14 @@ function showStartError(message) {
   startError.textContent = message || "";
 }
 
+function startErrorMessage(error) {
+  const message = error?.message || "Something went wrong.";
+  if (/failed to fetch|networkerror|abort|timeout/i.test(message)) {
+    return "Could not reach the game server. Run npm start and open http://127.0.0.1:4173.";
+  }
+  return message;
+}
+
 function applyGame(game) {
   if (liveStarted && game.status === "lobby") return;
   if (game.status === "playing") liveStarted = true;
@@ -133,7 +141,7 @@ startGameBtn.addEventListener("click", async () => {
     starting = false;
     startGameBtn.disabled = false;
     startGameBtn.textContent = "Start Game";
-    showStartError(error.message);
+    showStartError(startErrorMessage(error));
   }
 });
 

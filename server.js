@@ -30,8 +30,12 @@ export function createGameStore(filePath) {
 
   const persist = () => {
     if (!filePath) return;
-    fs.mkdirSync(path.dirname(filePath), { recursive: true });
-    fs.writeFileSync(filePath, JSON.stringify(Object.fromEntries(map)));
+    try {
+      fs.mkdirSync(path.dirname(filePath), { recursive: true });
+      fs.writeFileSync(filePath, JSON.stringify(Object.fromEntries(map)));
+    } catch {
+      // Keep the in-memory game running if the disk write fails.
+    }
   };
 
   if (filePath && fs.existsSync(filePath)) {
@@ -55,7 +59,11 @@ export function createGameStore(filePath) {
 }
 
 function persistStore(store) {
-  if (typeof store.persist === "function") store.persist();
+  try {
+    if (typeof store.persist === "function") store.persist();
+  } catch {
+    // Starting the round should not fail just because the save file is unwritable.
+  }
 }
 
 function sendJson(res, status, body) {
@@ -82,9 +90,10 @@ async function readJson(req, limit = 1_000_000) {
     }
     chunks.push(chunk);
   }
-  if (size === 0) return {};
+  const text = Buffer.concat(chunks).toString("utf8").trim();
+  if (!text) return {};
   try {
-    return JSON.parse(Buffer.concat(chunks).toString("utf8"));
+    return JSON.parse(text);
   } catch {
     const error = new Error("Request was not valid JSON.");
     error.statusCode = 400;
@@ -189,8 +198,10 @@ async function handleApi(req, res, url, store) {
   }
 
   const beginMatch = url.pathname.match(/^\/api\/games\/([^/]+)\/begin$/);
-  if (req.method === "POST" && beginMatch) {
-    await readJson(req);
+  // Start Game has no payload. Waiting to parse a body can hang on empty POSTs
+  // (some browsers keep the connection open), so GET is also accepted.
+  if ((req.method === "POST" || req.method === "GET") && beginMatch) {
+    if (req.method === "POST") req.resume();
     const session = getSession(store, beginMatch[1]);
     if (!session) {
       sendError(res, 404, "This game was not found.");
@@ -269,8 +280,7 @@ export function createServer({ store = createGameStore() } = {}) {
       }
 
       if (req.method !== "GET") {
-        res.writeHead(405, { allow: "GET", connection: "close" });
-        res.end("Method not allowed");
+        sendError(res, 405, "This page only accepts GET. Start Game goes through the /api/games route.");
         return;
       }
 

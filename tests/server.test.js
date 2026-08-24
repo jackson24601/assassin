@@ -182,6 +182,68 @@ test("begin game serves shuffled questions and scores answers", async () => {
   });
 });
 
+test("Start Game works with a JSON body, whitespace, or GET", async () => {
+  await withServer(async (origin) => {
+    async function formGame() {
+      const created = await fetch(`${origin}/api/games`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(quiz),
+      });
+      return created.json();
+    }
+
+    const jsonBody = await formGame();
+    const withJson = await fetch(`${origin}/api/games/${jsonBody.code}/begin?k=${jsonBody.hostToken}`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: "{}",
+    });
+    assert.equal(withJson.status, 200);
+    assert.equal((await withJson.json()).status, "playing");
+
+    const whitespace = await formGame();
+    const withSpace = await fetch(
+      `${origin}/api/games/${whitespace.code}/begin?k=${whitespace.hostToken}`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: "  \n",
+      },
+    );
+    assert.equal(withSpace.status, 200);
+    assert.equal((await withSpace.json()).status, "playing");
+
+    const viaGet = await formGame();
+    const getBegan = await fetch(`${origin}/api/games/${viaGet.code}/begin?k=${viaGet.hostToken}`);
+    assert.equal(getBegan.status, 200);
+    assert.equal((await getBegan.json()).status, "playing");
+  });
+});
+
+test("Start Game still succeeds when saving to disk fails", async () => {
+  const store = createGameStore();
+  store.persist = () => {
+    throw new Error("EACCES");
+  };
+
+  await withServer(async (origin) => {
+    const created = await fetch(`${origin}/api/games`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(quiz),
+    });
+    const session = await created.json();
+    const began = await fetch(`${origin}/api/games/${session.code}/begin?k=${session.hostToken}`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: "{}",
+    });
+    assert.equal(began.status, 200);
+    assert.equal((await began.json()).status, "playing");
+  }, { store });
+});
+
 test("a started game is still running after the server restarts", async () => {
   const file = path.join(os.tmpdir(), `assassin-games-${Date.now()}.json`);
   let code = "";
