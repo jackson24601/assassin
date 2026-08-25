@@ -23,7 +23,7 @@
           </div>
         </div>
         <p class="lede">
-          Share the player page with your teams. They will open that address and join a team from their phones or laptops.
+          Share the player page with your teams. When everyone has joined, click Start Game to send the questions.
         </p>
       </header>
 
@@ -44,6 +44,9 @@
             </span>
           </label>
           <p class="hint" id="copy-status" aria-live="polite"></p>
+          <button class="btn primary" type="button" id="start-game">Start Game</button>
+          <p class="hint" id="start-hint">Wait until the class is in, then click Start Game. Questions will appear on student screens in random order.</p>
+          <div id="start-error" class="errors" hidden></div>
           <a class="btn ghost" href="/" id="back-setup">Back to setup</a>
         </aside>
 

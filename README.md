@@ -6,11 +6,13 @@ A web-based classroom review game. Teachers build the quiz, then share a unique 
 
 - Select **2–8 teams**
 - Add **multiple-choice** and **true/false** questions, marking the correct answer
-- Start the game to create a **unique player page**
+- Click **Create Game** to generate a **unique player URL** you can share
+- After everyone has joined, click **Start Game** in the lobby; questions appear one at a time in random order
+- Right answers score **+1**, wrong answers score **-1**
 - Share that page address with the class; each team opens it and joins
 - See who has joined from the teacher lobby
 
-Work on the quiz is saved in the browser. The live join link is created when you start the game.
+Work on the quiz is saved in the browser. The live join link is created when you click Create Game.
 
 ## Run it locally
 
