@@ -37,7 +37,14 @@ const tfFalse = document.querySelector("#tf-false");
 const editorForm = document.querySelector("#editor-form");
 const closeEditorBtn = document.querySelector("#close-editor");
 const cancelEditorBtn = document.querySelector("#cancel-editor");
-const createGameBtn = document.querySelector("#create-game");
+const createGameBtn =
+  document.querySelector("#create-game") || document.querySelector(".questions-panel #start-game");
+const leftoverStart = document.querySelector(".questions-panel #start-game");
+if (leftoverStart && leftoverStart !== createGameBtn) leftoverStart.remove();
+if (createGameBtn) {
+  createGameBtn.id = "create-game";
+  createGameBtn.textContent = "Create Game";
+}
 const createGameError = document.querySelector("#create-game-error");
 const createGameHint = document.querySelector("#create-game-hint");
 
@@ -67,13 +74,15 @@ function render() {
 }
 
 function renderCreateGame() {
-  if (creating) return;
+  if (creating || !createGameBtn) return;
   const ready = gameIsReady(game);
   createGameBtn.disabled = !ready;
   createGameBtn.textContent = "Create Game";
-  createGameHint.textContent = ready
-    ? "Click Create Game to generate a player URL. After your teams join, click Start Game in the lobby."
-    : "Add at least one question, then click Create Game to generate a URL you can send to your teams.";
+  if (createGameHint) {
+    createGameHint.textContent = ready
+      ? "Click Create Game to generate a player URL you can send to your students."
+      : "Add at least one question, then click Create Game to generate a URL you can send to your students.";
+  }
 }
 
 function renderTeams() {
@@ -291,26 +300,32 @@ editorForm.addEventListener("submit", (event) => {
 });
 closeEditorBtn.addEventListener("click", () => editor.close());
 cancelEditorBtn.addEventListener("click", () => editor.close());
-createGameBtn.addEventListener("click", async () => {
-  if (!gameIsReady(game) || creating) return;
-  creating = true;
-  createGameError.hidden = true;
-  createGameError.textContent = "";
-  createGameBtn.disabled = true;
-  createGameBtn.textContent = "Creating game…";
-  try {
-    const created = await createGame(game);
-    window.location.href = created.hostPath;
-  } catch (error) {
-    creating = false;
-    createGameError.hidden = false;
-    createGameError.textContent =
-      error.message === "Failed to fetch"
-        ? "Could not create the game. Run npm start so the class can join from a shared link."
-        : error.message;
-    renderCreateGame();
-  }
-});
+if (createGameBtn) {
+  createGameBtn.addEventListener("click", async () => {
+    if (!gameIsReady(game) || creating) return;
+    creating = true;
+    if (createGameError) {
+      createGameError.hidden = true;
+      createGameError.textContent = "";
+    }
+    createGameBtn.disabled = true;
+    createGameBtn.textContent = "Creating game…";
+    try {
+      const created = await createGame(game);
+      window.location.href = created.hostPath;
+    } catch (error) {
+      creating = false;
+      if (createGameError) {
+        createGameError.hidden = false;
+        createGameError.textContent =
+          error.message === "Failed to fetch"
+            ? "Could not create the game. Run npm start so the class can join from a shared link."
+            : error.message;
+      }
+      renderCreateGame();
+    }
+  });
+}
 exportBtn.addEventListener("click", () => {
   downloadJson("class-review-quiz.json", game);
 });

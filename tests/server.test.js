@@ -59,6 +59,7 @@ test("starting a game creates a unique player page teams can join", async () => 
     const teacherHtml = await teacherPage.text();
     assert.match(teacherHtml, /id="create-game"[^>]*>Create Game/);
     assert.equal(teacherHtml.includes('id="start-game"'), false);
+    assert.equal(/<button[^>]*>\s*Start [Gg]ame/.test(teacherHtml), false);
 
     const hostPage = await fetch(`${origin}/host/${session.code}?k=${session.hostToken}`);
     assert.equal(hostPage.status, 200);
