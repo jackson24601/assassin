@@ -249,6 +249,39 @@ test("Start Game still succeeds when saving to disk fails", async () => {
   }, { store });
 });
 
+test("Create Game works from another origin and answers a health check", async () => {
+  await withServer(async (origin) => {
+    const health = await fetch(`${origin}/api/health`);
+    assert.equal(health.status, 200);
+    assert.equal((await health.json()).ok, true);
+
+    const preflight = await fetch(`${origin}/api/games`, {
+      method: "OPTIONS",
+      headers: {
+        origin: "http://127.0.0.1:5500",
+        "access-control-request-method": "POST",
+        "access-control-request-headers": "content-type",
+      },
+    });
+    assert.equal(preflight.status, 204);
+    assert.equal(preflight.headers.get("access-control-allow-origin"), "*");
+
+    const created = await fetch(`${origin}/api/games`, {
+      method: "POST",
+      headers: {
+        origin: "http://127.0.0.1:5500",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(quiz),
+    });
+    assert.equal(created.status, 201);
+    assert.equal(created.headers.get("access-control-allow-origin"), "*");
+    const session = await created.json();
+    assert.equal(session.hostUrl.startsWith(`${origin}/host/`), true);
+    assert.match(session.playerUrl, /\/play\/[A-Z0-9]{6}$/);
+  });
+});
+
 test("a started game is still running after the server restarts", async () => {
   const file = path.join(os.tmpdir(), `assassin-games-${Date.now()}.json`);
   let code = "";

@@ -12,7 +12,7 @@ import {
   questionToDraft,
   summarizeQuestion,
 } from "./questions.js";
-import { createGame } from "./api.js";
+import { createGame, findGameServer } from "./api.js";
 import { downloadJson, loadGame, saveGame } from "./storage.js";
 
 const teamGrid = document.querySelector("#team-grid");
@@ -312,7 +312,7 @@ if (createGameBtn) {
     createGameBtn.textContent = "Creating game…";
     try {
       const created = await createGame(game);
-      window.location.href = created.hostPath;
+      window.location.href = created.hostUrl || created.hostPath;
     } catch (error) {
       creating = false;
       if (createGameError) {
@@ -348,3 +348,15 @@ importInput.addEventListener("change", async () => {
 });
 
 render();
+
+const serverStatus = document.querySelector("#server-status");
+findGameServer().then((origin) => {
+  if (!serverStatus) return;
+  if (origin) {
+    serverStatus.hidden = true;
+    return;
+  }
+  serverStatus.hidden = false;
+  serverStatus.textContent =
+    "The game server is not running yet. In a terminal, run npm start, then open http://127.0.0.1:4173 before clicking Create Game.";
+});

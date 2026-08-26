@@ -20,7 +20,7 @@ Work on the quiz is saved in the browser. The live join link is created when you
 npm start
 ```
 
-Then visit [http://localhost:4173](http://localhost:4173).
+Then visit [http://127.0.0.1:4173](http://127.0.0.1:4173). Create Game needs that address — a Live Server preview or opening `index.html` directly cannot create the student URL unless this server is also running.
 
 If students are on phones, open the teacher page using your computer's local network address (not `localhost`) so the shared player link works on their devices.
 
