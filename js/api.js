@@ -53,6 +53,20 @@ function helpForFailedRequest(status, text) {
   return status ? `Request failed (${status}).` : "Something went wrong.";
 }
 
+export function apiOrigins() {
+  const origins = [];
+  const add = (value) => {
+    if (!value || origins.includes(value)) return;
+    origins.push(value);
+  };
+  if (typeof window !== "undefined" && /^https?:$/.test(window.location.protocol)) {
+    add(window.location.origin);
+  }
+  add("http://127.0.0.1:4173");
+  add("http://localhost:4173");
+  return origins;
+}
+
 async function readJson(response) {
   const text = await response.text();
   let data = {};
@@ -74,24 +88,60 @@ async function readJson(response) {
   return data;
 }
 
-export async function createGame(quiz) {
-  return readJson(
-    await fetch("/api/games", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(quiz),
-    }),
+async function apiRequest(path, options = {}) {
+  let lastError;
+  for (const origin of apiOrigins()) {
+    try {
+      const data = await readJson(await fetch(`${origin}${path}`, options));
+      data.apiOrigin = origin;
+      return data;
+    } catch (error) {
+      lastError = error;
+      if (error.fromApi) throw error;
+    }
+  }
+  throw (
+    lastError ||
+    new Error("Could not reach the game server. Run npm start and open http://127.0.0.1:4173.")
   );
+}
+
+export async function findGameServer() {
+  for (const origin of apiOrigins()) {
+    try {
+      const options = { headers: { accept: "application/json" } };
+      if (typeof AbortSignal !== "undefined" && typeof AbortSignal.timeout === "function") {
+        options.signal = AbortSignal.timeout(1500);
+      }
+      const data = await readJson(await fetch(`${origin}/api/health`, options));
+      if (data?.ok) return origin;
+    } catch {
+      // Try the next local game server.
+    }
+  }
+  return null;
+}
+
+export async function createGame(quiz) {
+  const created = await apiRequest("/api/games", {
+    method: "POST",
+    headers: { accept: "application/json", "content-type": "application/json" },
+    body: JSON.stringify(quiz),
+  });
+  if (!created.hostUrl && created.hostPath && created.apiOrigin) {
+    created.hostUrl = `${created.apiOrigin}${created.hostPath}`;
+  }
+  return created;
 }
 
 export async function fetchPublicGame(code, playerId) {
   const query = playerId ? `?playerId=${encodeURIComponent(playerId)}` : "";
-  return readJson(await fetch(`/api/games/${encodeURIComponent(code)}${query}`));
+  return apiRequest(`/api/games/${encodeURIComponent(code)}${query}`);
 }
 
 export async function fetchHostGame(code, hostToken) {
-  return readJson(
-    await fetch(`/api/games/${encodeURIComponent(code)}/host?k=${encodeURIComponent(hostToken)}`),
+  return apiRequest(
+    `/api/games/${encodeURIComponent(code)}/host?k=${encodeURIComponent(hostToken)}`,
   );
 }
 
@@ -106,34 +156,28 @@ export async function beginHostGame(code, hostToken) {
     post.signal = AbortSignal.timeout(6000);
   }
   try {
-    return await readJson(await fetch(path, post));
+    return await apiRequest(path, post);
   } catch (error) {
     if (error.fromApi) throw error;
-    return readJson(
-      await fetch(path, {
-        method: "GET",
-        headers: { accept: "application/json" },
-      }),
-    );
+    return apiRequest(path, {
+      method: "GET",
+      headers: { accept: "application/json" },
+    });
   }
 }
 
 export async function joinGame(code, body) {
-  return readJson(
-    await fetch(`/api/games/${encodeURIComponent(code)}/join`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(body),
-    }),
-  );
+  return apiRequest(`/api/games/${encodeURIComponent(code)}/join`, {
+    method: "POST",
+    headers: { accept: "application/json", "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
 }
 
 export async function submitAnswer(code, body) {
-  return readJson(
-    await fetch(`/api/games/${encodeURIComponent(code)}/answer`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(body),
-    }),
-  );
+  return apiRequest(`/api/games/${encodeURIComponent(code)}/answer`, {
+    method: "POST",
+    headers: { accept: "application/json", "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
 }

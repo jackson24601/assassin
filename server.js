@@ -58,6 +58,14 @@ export function createGameStore(filePath) {
   };
 }
 
+function corsHeaders() {
+  return {
+    "access-control-allow-origin": "*",
+    "access-control-allow-methods": "GET, POST, OPTIONS",
+    "access-control-allow-headers": "content-type, x-host-token, accept",
+  };
+}
+
 function persistStore(store) {
   try {
     if (typeof store.persist === "function") store.persist();
@@ -70,6 +78,7 @@ function sendJson(res, status, body) {
   res.writeHead(status, {
     "content-type": "application/json; charset=utf-8",
     connection: "close",
+    ...corsHeaders(),
   });
   res.end(JSON.stringify(body));
 }
@@ -144,6 +153,11 @@ function hostTokenFrom(req, url) {
 }
 
 async function handleApi(req, res, url, store) {
+  if (req.method === "GET" && url.pathname === "/api/health") {
+    sendJson(res, 200, { ok: true });
+    return;
+  }
+
   if (req.method === "POST" && url.pathname === "/api/games") {
     const quiz = await readJson(req);
     const code = unusedJoinCode(store);
@@ -275,6 +289,15 @@ export function createServer({ store = createGameStore() } = {}) {
       const url = new URL(req.url ?? "/", `http://${req.headers.host || "localhost"}`);
 
       if (url.pathname.startsWith("/api/")) {
+        if (req.method === "OPTIONS") {
+          res.writeHead(204, {
+            ...corsHeaders(),
+            "access-control-max-age": "86400",
+            connection: "close",
+          });
+          res.end();
+          return;
+        }
         await handleApi(req, res, url, store);
         return;
       }
